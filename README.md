@@ -13,15 +13,15 @@ namespace](https://github.com/kubernetes/charts/tree/master/stable/concourse#kub
 
 The following pipeline configs are provided in this repo:
 
-### [`dev/cpanel.yaml`](dev/cpanel.yaml)
+### [`dev/cpanel-api.yaml`](dev/cpanel-api.yaml)
 ```sh
-fly -t default set-pipeline -p cpanel-api -c dev/cpanel.yaml
+fly -t default set-pipeline -p cpanel-api -c dev/cpanel-api.yaml
 ```
 A pipeline for deploying the Control Panel API to the dev cluster.
 
-### [`dev/cpfrontend.yaml`](dev/cpfrontend.yaml)
+### [`dev/cpanel-frontend.yaml`](dev/cpanel-frontend.yaml)
 ```sh
-fly -t default set-pipeline -p cpanel-frontend -c dev/cpfrontend.yaml -v cpanel-api-url=http://cpanel-master-cpanel
+fly -t default set-pipeline -p cpanel-frontend -c dev/cpanel-frontend.yaml -v cpanel-api-url=http://cpanel-master-cpanel
 ```
 A pipeline for deploying the Control Panel frontend to the dev cluster.
 <table>
@@ -33,15 +33,15 @@ A pipeline for deploying the Control Panel frontend to the dev cluster.
 </tbody>
 </table>
 
-### [`alpha/cpanel.yaml`](alpha/cpanel.yaml)
+### [`alpha/cpanel-api.yaml`](alpha/cpanel-api.yaml)
 ```sh
-fly -t default set-pipeline -p cpanel-api -c alpha/cpanel.yaml
+fly -t default set-pipeline -p cpanel-api -c alpha/cpanel-api.yaml
 ```
 A pipeline for deploying the Control Panel API to the alpha cluster.
 
-### [`alpha/cpfrontend.yaml`](alpha/cpfrontend.yaml)
+### [`alpha/cpanel-frontend.yaml`](alpha/cpanel-frontend.yaml)
 ```sh
-fly -t default set-pipeline -p cpanel-frontend -c alpha/cpfrontend.yaml -v cpanel-api-url=http://cpanel-master-cpanel
+fly -t default set-pipeline -p cpanel-frontend -c alpha/cpanel-frontend.yaml -v cpanel-api-url=http://cpanel-master-cpanel
 ```
 A pipeline for deploying the Control Panel frontend to the alpha cluster.
 <table>
