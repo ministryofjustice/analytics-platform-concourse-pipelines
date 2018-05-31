@@ -9,7 +9,7 @@ jobs:
   - put: docker-image
     params:
       build: source
-      tag: source/ref
+      tag: source/.git/ref
 
   - get: helm-config
 
@@ -19,7 +19,7 @@ jobs:
       values:
       - helm-config/chart-env-config/dev/cpfrontend.yml
       override_values:
-      - { key: Frontend.Image.Tag, path: source/ref }
+      - { key: Frontend.Image.Tag, path: source/.git/ref }
       - { key: Frontend.Branch, value: master }
       - { key: Frontend.Environment.API_URL, value: ((cpanel-api-url)) }
 

@@ -9,7 +9,7 @@ jobs:
   - put: cpanel-docker-image
     params:
       build: cpanel-source
-      tag: cpanel-source/ref
+      tag: cpanel-source/.git/ref
 
   - get: cpanel-helm-config
 
@@ -19,7 +19,7 @@ jobs:
       values:
       - cpanel-helm-config/chart-env-config/dev/cpanel.yml
       override_values:
-      - { key: API.Image.Tag, path: cpanel-source/ref }
+      - { key: API.Image.Tag, path: cpanel-source/.git/ref }
       - { key: API.Branch, value: master }
       - { key: tags.branch, value: false }
 
