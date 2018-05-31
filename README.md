@@ -3,11 +3,11 @@ Concourse pipelines for components of the Analytical Platform
 
 ## Usage
 
-Set/update a pipeline with `fly -t target set-pipeline -p pipeline-name -f pipeline.yaml`
+Set/update a pipeline with `fly -t target set-pipeline -p pipeline-name -c pipeline.yaml`
 
 Eg:
 ```sh
-fly -t default set-pipeline -p cpanel-api -f cpanel.yaml -v env=dev
+fly -t default set-pipeline -p cpanel-api -c cpanel.yaml -v env=dev
 ```
 
 ## Values
