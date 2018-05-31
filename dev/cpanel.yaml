@@ -1,0 +1,64 @@
+---
+jobs:
+- name: deploy
+  plan:
+
+  - get: cpanel-source
+    trigger: true
+
+  - put: cpanel-docker-image
+    params:
+      build: cpanel-source
+      tag: cpanel-source/ref
+
+  - get: cpanel-helm-config
+
+  - put: cpanel-helm-release
+    params:
+      chart: mojanalytics/cpanel
+      values:
+      - cpanel-helm-config/chart-env-config/dev/cpanel.yml
+      override_values:
+      - { key: API.Image.Tag, path: cpanel-source/ref }
+      - { key: API.Branch, value: master }
+      - { key: tags.branch, value: false }
+
+resources:
+- name: cpanel-source
+  type: git
+  source:
+    uri: https://github.com/ministryofjustice/analytics-platform-control-panel.git
+    branch: master
+
+- name: cpanel-docker-image
+  type: docker-image
+  source:
+    repository: quay.io/mojanalytics/control-panel
+    username: ((secrets.quay-username))
+    password: ((secrets.quay-password))
+
+- name: cpanel-helm-config
+  type: git
+  source:
+    git_crypt_key: ((secrets.gitcrypt-symmetric-key))
+    uri: https://github.com/ministryofjustice/analytics-platform-config.git
+
+- name: cpanel-helm-release
+  type: helm
+  source:
+    cluster_url: ((secrets.kubernetes-api-url))
+    cluster_ca: ((secrets.kubernetes-ca-cert))
+    helm_host: tiller-deploy.kube-system:44134
+    token: ((secrets.kubernetes-token))
+    namespace: default
+    release: cpanel-master
+    repos:
+    - name: mojanalytics
+      url: http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
+
+resource_types:
+- name: helm
+  type: docker-image
+  source:
+    repository: linkyard/concourse-helm-resource
+    tag: 2.9.1

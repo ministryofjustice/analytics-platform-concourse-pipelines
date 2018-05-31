@@ -1,0 +1,64 @@
+---
+jobs:
+- name: deploy
+  plan:
+
+  - get: source
+    trigger: true
+
+  - put: docker-image
+    params:
+      build: source
+      tag: source/ref
+
+  - get: helm-config
+
+  - put: helm-release
+    params:
+      chart: mojanalytics/cpfrontend
+      values:
+      - helm-config/chart-env-config/dev/cpfrontend.yml
+      override_values:
+      - { key: Frontend.Image.Tag, path: source/ref }
+      - { key: Frontend.Branch, value: master }
+      - { key: Frontend.Environment.API_URL, value: ((cpanel-api-url)) }
+
+resources:
+- name: source
+  type: git
+  source:
+    uri: https://github.com/ministryofjustice/analytics-platform-control-panel-frontend.git
+    branch: master
+
+- name: docker-image
+  type: docker-image
+  source:
+    repository: quay.io/mojanalytics/control-panel-frontend
+    username: ((secrets.quay-username))
+    password: ((secrets.quay-password))
+
+- name: helm-config
+  type: git
+  source:
+    git_crypt_key: ((secrets.gitcrypt-symmetric-key))
+    uri: https://github.com/ministryofjustice/analytics-platform-config.git
+
+- name: helm-release
+  type: helm
+  source:
+    cluster_url: ((secrets.kubernetes-api-url))
+    cluster_ca: ((secrets.kubernetes-ca-cert))
+    helm_host: tiller-deploy.kube-system:44134
+    token: ((secrets.kubernetes-token))
+    namespace: default
+    release: cpfrontend-master
+    repos:
+    - name: mojanalytics
+      url: http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
+
+resource_types:
+- name: helm
+  type: docker-image
+  source:
+    repository: linkyard/concourse-helm-resource
+    tag: 2.9.1

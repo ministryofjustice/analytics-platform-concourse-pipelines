@@ -1,0 +1,79 @@
+---
+jobs:
+- name: deploy
+  plan:
+
+  - get: release
+    trigger: true
+    params:
+      include_source_tarball: true
+
+  - get: common-tasks
+
+  - task: source
+    file: common-tasks/extract-release-tarball.yaml
+    output_mapping: {extracted: source}
+
+  - put: docker-image
+    params:
+      build: source
+      tag: release/commit_sha
+      additional_tags: release/tag
+
+  - get: helm-config
+
+  - put: helm-release
+    params:
+      chart: mojanalytics/cpfrontend
+      values:
+      - helm-config/chart-env-config/alpha/cpfrontend.yml
+      override_values:
+      - { key: Frontend.Image.Tag, path: release/commit_sha }
+      - { key: Frontend.Branch, value: master }
+      - { key: Frontend.Environment.API_URL, value: ((cpanel-api-url)) }
+
+resources:
+- name: common-tasks
+  type: git
+  source:
+    uri: https://github.com/ministryofjustice/analytics-platform-common-concourse-tasks.git
+
+- name: release
+  type: github-release
+  source:
+    owner: ministryofjustice
+    repository: analytics-platform-control-panel-frontend
+    access_token: ((secrets.github-access-token))
+
+- name: docker-image
+  type: docker-image
+  source:
+    repository: quay.io/mojanalytics/control-panel-frontend
+    username: ((secrets.quay-username))
+    password: ((secrets.quay-password))
+
+- name: helm-config
+  type: git
+  source:
+    git_crypt_key: ((secrets.gitcrypt-symmetric-key))
+    uri: https://github.com/ministryofjustice/analytics-platform-config.git
+
+- name: helm-release
+  type: helm
+  source:
+    cluster_url: ((secrets.kubernetes-api-url))
+    cluster_ca: ((secrets.kubernetes-ca-cert))
+    helm_host: tiller-deploy.kube-system:44134
+    token: ((secrets.kubernetes-token))
+    namespace: default
+    release: cpfrontend-master
+    repos:
+    - name: mojanalytics
+      url: http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
+
+resource_types:
+- name: helm
+  type: docker-image
+  source:
+    repository: linkyard/concourse-helm-resource
+    tag: 2.9.1
