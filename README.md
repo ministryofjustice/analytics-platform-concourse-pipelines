@@ -52,3 +52,20 @@ A pipeline for deploying the Control Panel frontend to the alpha cluster.
     <td>The URL for the Control Panel API that the frontend will connect to. This should be <code>http://cpanel-master-cpanel/</code>, unless you are doing something unusual</td></tr>
 </tbody>
 </table>
+
+### [`update-helm-repo.yaml`](update-helm-repo.yaml)
+```sh
+fly -t default set-pipeline -p update-helm-repo -c update-helm-repo.yaml -v s3-bucket=moj-analytics-helm-repo -v aws-region=eu-west-1
+```
+A pipeline to keep our Helm repository up-to-date.
+<table>
+<thead><tr><th>Value</th><th>Description</th></tr></thead>
+<tbody>
+    <tr>
+    <td><code>s3-bucket</code></td>
+    <td>The name of the S3 bucket where the Helm chart packages and index YAML file are stored. Usually `moj-analytics-helm-repo`.</td></tr>
+    <tr>
+    <td><code>aws-region</code></td>
+    <td>The AWS region where the S3 bucket is hosted. This is usually `eu-west-1`.</td></tr>
+</tbody>
+</table>

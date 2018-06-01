@@ -1,0 +1,90 @@
+---
+resources:
+- name: helm-charts
+  type: git
+  source:
+    uri: https://github.com/ministryofjustice/analytics-platform-helm-charts.git
+
+jobs:
+- name: helm-repo
+  plan:
+
+  - get: helm-charts
+    trigger: true
+
+  - task: existing-index
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: anigeo/awscli
+      params:
+        BUCKET: ((s3-bucket))
+      run:
+        path: sh
+        args:
+        - -ec
+        - |
+          aws s3 cp s3://${BUCKET}/index.yaml output/index.yaml
+      outputs:
+      - name: output
+      output_mapping: {output: existing-index}
+
+  - task: package-charts
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: lachlanevenson/k8s-helm
+          tag: v2.9.1
+      params:
+        BUCKET: ((s3-bucket))
+        REGION: ((aws-region))
+      run:
+        path: sh
+        args:
+        - -c
+        - |
+          helm init --client-only
+          for chart in input/charts/*/Chart.yaml; do
+            helm package -d output $(dirname $chart)
+          done
+          URL=http://${BUCKET}.s3-website-${REGION}.amazonaws.com
+          MERGE=""
+          if [ -f existing/index.yaml ]; then
+            MERGE="--merge existing/index.yaml"
+          fi
+          helm repo index ${MERGE} --url ${URL} output
+          cat output/index.yaml
+      inputs:
+      - name: input
+      - name: existing
+      outputs:
+      - name: output
+    input_mapping:
+      existing: existing-index
+      input: helm-charts
+    output_mapping:
+      output: packaged-charts
+
+  - task: update-repo
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: anigeo/awscli
+      params:
+        BUCKET: ((s3-bucket))
+      run:
+        path: sh
+        args:
+        - -ec
+        - |
+          aws s3 cp input s3://${BUCKET}/ --recursive
+      inputs:
+      - name: input
+    input_mapping:
+      input: packaged-charts
