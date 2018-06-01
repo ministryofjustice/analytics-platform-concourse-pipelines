@@ -80,8 +80,8 @@ resources:
   type: docker-image
   source:
     repository: quay.io/mojanalytics/control-panel
-    username: ((secrets.quay-username))
-    password: ((secrets.quay-password))
+    username: ((quay.username))
+    password: ((quay.password))
 
 - name: postgres
   type: docker-image
@@ -92,16 +92,16 @@ resources:
 - name: helm-values
   type: git
   source:
-    git_crypt_key: ((secrets.gitcrypt-symmetric-key))
+    git_crypt_key: ((gitcryptKeys.config))
     uri: https://github.com/ministryofjustice/analytics-platform-config.git
 
 - name: helm-release
   type: helm
   source:
-    cluster_url: ((secrets.kubernetes-api-url))
-    cluster_ca: ((secrets.kubernetes-ca-cert))
+    cluster_url: ((kubernetes.apiUrl))
+    cluster_ca: ((kubernetes.caCert))
     helm_host: tiller-deploy.kube-system:44134
-    token: ((secrets.kubernetes-token))
+    token: ((kubernetes.token))
     namespace: default
     release: cpanel-master
     repos:

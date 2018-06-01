@@ -43,28 +43,28 @@ resources:
   source:
     owner: ministryofjustice
     repository: analytics-platform-control-panel
-    access_token: ((secrets.github-access-token))
+    access_token: ((github.accessToken))
 
 - name: cpanel-docker-image
   type: docker-image
   source:
     repository: quay.io/mojanalytics/control-panel
-    username: ((secrets.quay-username))
-    password: ((secrets.quay-password))
+    username: ((quay.username))
+    password: ((quay.password))
 
 - name: cpanel-helm-config
   type: git
   source:
-    git_crypt_key: ((secrets.gitcrypt-symmetric-key))
+    git_crypt_key: ((gitcryptKeys.config))
     uri: https://github.com/ministryofjustice/analytics-platform-config.git
 
 - name: cpanel-helm-release
   type: helm
   source:
-    cluster_url: ((secrets.kubernetes-api-url))
-    cluster_ca: ((secrets.kubernetes-ca-cert))
+    cluster_url: ((kubernetes.apiUrl))
+    cluster_ca: ((kubernetes.caCert))
     helm_host: tiller-deploy.kube-system:44134
-    token: ((secrets.kubernetes-token))
+    token: ((kubernetes.token))
     namespace: default
     release: cpanel-master
     repos:
