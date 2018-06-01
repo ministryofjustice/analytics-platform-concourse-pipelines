@@ -1,5 +1,22 @@
-# analytics-platform-concourse-pipelines
-Concourse pipelines for components of the Analytical Platform
+# Concourse pipelines for components of the Analytical Platform
+
+## Usage
+
+These pipeline configuration files are designed to be used with Concourse to
+deploy components of the MOJ Analytical Platform.
+
+Setting a pipeline in Concourse is done using the [`fly` CLI tool](https://concourse-ci.org/fly.html)
+
+Example invocations of `fly` are listed alongside the documentation of each
+pipeline below. You will need to `fly login` to a Concourse server before you
+can set a pipeline, and on first login, you will name the "target", which is
+referred to as `default` in the examples. Eg:
+
+These pipelines are all intended to be owned by the `admin` team, so an example
+login command would look like:
+```sh
+fly -t default login -c https://concourse-url -n admin
+```
 
 ## Values
 
@@ -63,9 +80,9 @@ A pipeline to keep our Helm repository up-to-date.
 <tbody>
     <tr>
     <td><code>s3-bucket</code></td>
-    <td>The name of the S3 bucket where the Helm chart packages and index YAML file are stored. Usually `moj-analytics-helm-repo`.</td></tr>
+    <td>The name of the S3 bucket where the Helm chart packages and index YAML file are stored. Usually <code>moj-analytics-helm-repo</code>.</td></tr>
     <tr>
     <td><code>aws-region</code></td>
-    <td>The AWS region where the S3 bucket is hosted. This is usually `eu-west-1`.</td></tr>
+    <td>The AWS region where the S3 bucket is hosted. This is usually <code>eu-west-1</code>.</td></tr>
 </tbody>
 </table>
