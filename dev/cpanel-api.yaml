@@ -92,14 +92,14 @@ resources:
 - name: helm-values
   type: git
   source:
-    git_crypt_key: ((gitcryptKeys.config))
+    git_crypt_key: ((gitcrypt-keys.config))
     uri: https://github.com/ministryofjustice/analytics-platform-config.git
 
 - name: helm-release
   type: helm
   source:
-    cluster_url: ((kubernetes.apiUrl))
-    cluster_ca: ((kubernetes.caCert))
+    cluster_url: ((kubernetes.api-url))
+    cluster_ca: ((kubernetes.ca-cert))
     helm_host: tiller-deploy.kube-system:44134
     token: ((kubernetes.token))
     namespace: default
