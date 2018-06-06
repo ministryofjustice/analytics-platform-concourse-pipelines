@@ -1,0 +1,101 @@
+---
+jobs:
+- name: deploy
+  plan:
+
+  - get: release
+    trigger: true
+    params:
+      include_source_tarball: true
+
+  - get: common-tasks
+
+  - task: extract-cronjob-tarball
+    file: common-tasks/extract-release-tarball.yaml
+    output_mapping: {extracted: cronjob-source}
+
+  - task: parse-cronjob-params
+    config:
+      platform: linux
+
+      image_resource:
+        type: docker-image
+        source:
+          repository: gempesaw/curl-jq
+
+      inputs:
+        - name: cronjob-source
+
+      outputs:
+        - name: cronjob-params
+
+      run:
+        path: sh
+        args:
+        - -ec
+        - |
+          jq -r '.IAM_role_name' > cronjob-params/IAM_role_name < cronjob-source/cronjob/deploy.json
+          jq -r '.schedule' > cronjob-params/schedule < cronjob-source/cronjob/deploy.json
+          jq -r '.team' > cronjob-params/team < cronjob-source/cronjob/deploy.json
+          jq -r '.category' > cronjob-params/category < cronjob-source/cronjob/deploy.json
+
+  - put: docker-image
+    params:
+      build: cronjob-source/cronjob
+      tag: release/commit_sha
+      additional_tags: release/tag
+
+  - task: render-cronjob-yaml
+    config:
+      platform: linux
+
+      image_resource:
+        type: docker-image
+        source:
+          repository: cirocosta/alpine-envsubst
+
+      inputs:
+        - name: release
+        - name: cronjob-params
+        - name: cronjob-source
+
+      outputs:
+        - name: cronjob
+
+      params:
+        CRONJOB_IMAGE_REPO: quay.io/mojanalytics/((github-repository))
+        CRONJOB_NAME: ((github-repository))
+
+      run:
+        path: sh
+        args:
+        - -ec
+        - |
+          export CRONJOB_CATEGORY="$(cat cronjob-params/category)"
+          export CRONJOB_IAM_ROLE_NAME="$(cat cronjob-params/IAM_role_name)"
+          export CRONJOB_IMAGE_TAG="$(cat release/tag)"
+          export CRONJOB_SCHEDULE="$(cat cronjob-params/schedule)"
+          export CRONJOB_TEAM="$(cat cronjob-params/team)"
+
+          envsubst < cronjob-source/cronjob/cronjob.yaml > cronjob/cronjob.yaml
+
+resources:
+
+- name: release
+  type: github-release
+  source:
+    owner: ((github-owner))
+    repository: ((github-repository))
+    access_token: ((github.access-token))
+
+- name: common-tasks
+  type: git
+  source:
+    uri: https://github.com/ministryofjustice/analytics-platform-common-concourse-tasks.git
+
+- name: docker-image
+  type: docker-image
+  source:
+    repository: quay.io/mojanalytics/((github-repository))
+    username: ((quay.username))
+    password: ((quay.password))

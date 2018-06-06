@@ -86,3 +86,27 @@ A pipeline to keep our Helm repository up-to-date.
     <td>The AWS region where the S3 bucket is hosted. This is usually <code>eu-west-1</code>.</td></tr>
 </tbody>
 </table>
+
+
+### [`deploy-cronjob.yaml`](deploy-cronjob.yaml)
+```sh
+fly -t $TEAM_NAME set-pipeline -p deploy-cronjob-$CRONJOB_NAME -c deploy-cronjob.yaml -v github-owner=$GH_OWNER -v github-repository=$GH_REPOSITORY
+```
+A pipeline to deploy a CronJob.
+
+<table>
+<thead><tr><th>Value</th><th>Description</th></tr></thead>
+<tbody>
+    <tr>
+        <td><code>github-owner</code></td>
+        <td>The GitHub owner of the repository holding the CronJob. Usually <code>moj-analytical-services</code>.
+        For example, if the repository is <code>moj-analytical-services/foo-cronjob</code>, this value is <code>moj-analytical-services</code>.
+        </td>
+    </tr>
+    <tr>
+        <td><code>github-repository</code></td>
+        <td>The GitHub repository holding the CronJob.
+        For example, if the repository is <code>moj-analytical-services/foo-cronjob</code>, this value is <code>foo-cronjob</code>.</td>
+    </tr>
+</tbody>
+</table>
