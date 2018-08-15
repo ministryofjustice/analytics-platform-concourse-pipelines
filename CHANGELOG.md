@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2018-08-02
+### Added
+Added `airflow.yaml` pipeline which triggers for
+PRs into the [example dags
+repo](https://github.com/ministryofjustice/analytics-platform-airflow-example-dags)
+in `dev` and the [airflow dags
+repo](https://github.com/moj-analytical-services/airflow-dags/) in `alpha`.
 
 ## [0.1.1] - 2018-06-04
 ### Changed

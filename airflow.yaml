@@ -1,0 +1,167 @@
+---
+jobs:
+  - name: lint
+    plan:
+      - get: resource-dags-pr
+        trigger: true
+        version: every
+      
+      # Update github 'checks' on PR
+      - aggregate:
+        - put: resource-dags-pr
+          params:
+            path: resource-dags-pr
+            status: pending
+            context: lint
+
+        - put: resource-dags-pr
+          params:
+            path: resource-dags-pr
+            status: pending
+            context: list-roles
+      # run the lint and list roles tasks concurrently
+      - aggregate:
+        - task: run-lint
+          config:
+            platform: linux
+            image_resource:
+              type: docker-image
+              source:
+                repository: quay.io/mojanalytics/airflow
+                tag: latest
+            inputs:
+              - name: resource-dags-pr
+            params:
+              AIRFLOW__CORE__LOAD_EXAMPLES: false
+              AIRFLOW__CORE__DAGS_FOLDER: ./resource-dags-pr
+            run:
+              path: python
+              args:
+                - -c
+                - |
+                  from airflow.models import DagBag
+                  import airflow.utils.dag_processing
+                  d = DagBag()
+                  assert len(d.import_errors) == 0, 'There should be no DAG failures. Got {}'.format(d.import_errors)
+        
+        - task: list-roles-used-by-dags
+          config:
+            platform: linux
+            image_resource:
+              type: docker-image
+              source:
+                repository: quay.io/mojanalytics/airflow
+                tag: latest
+            inputs:
+              - name: resource-dags-pr
+            outputs:
+              - name: dag-roles
+            params:
+              AIRFLOW__CORE__LOAD_EXAMPLES: false
+              AIRFLOW__CORE__DAGS_FOLDER: ./resource-dags-pr
+            run:
+              path: python
+              args:
+                - -c
+                - |
+                  import itertools
+                  from airflow.models import DagBag
+                  import airflow.utils.dag_processing
+                  
+                  d = DagBag()
+
+                  all_tasks = itertools.chain.from_iterable(dag.tasks for dag in d.dags.values())
+                  annotated_tasks = [x for x in all_tasks if hasattr(x, 'annotations')]
+
+                  annotations = set(itertools.chain.from_iterable(t.annotations.values() for t in annotated_tasks if t.annotations))
+                  with open('dag-roles/roles.txt', 'w') as f:
+                    f.writelines([f'{role}\n' for role in annotations])
+        on_failure:
+          put: resource-dags-pr
+          params:
+            path: resource-dags-pr
+            status: failure
+            context: list-roles
+      
+      
+      # mark first two tasks' github 'checks' as success and mark the 
+      # check roles one as pending
+      - aggregate:
+        - put: resource-dags-pr
+          params:
+            path: resource-dags-pr
+            status: success
+            context: list-roles
+        - put: resource-dags-pr
+          params:
+            path: resource-dags-pr
+            status: success
+            context: lint
+        - put: resource-dags-pr
+          params:
+            path: resource-dags-pr
+            status: pending
+            context: check-role-annotation
+
+      - task: check-role-annotation
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: governmentpaas/awscli
+              tag: latest
+          inputs:
+            - name: resource-dags-pr
+            - name: dag-roles
+          outputs:
+            - name: comment
+          params:
+              AWS_ACCESS_KEY_ID: ((secrets.iam-list-roles-key-id))
+              AWS_SECRET_ACCESS_KEY: ((secrets.iam-list-roles-secret-access-key))
+          run:
+            path: sh
+            args:
+              - -c 
+              - |
+                aws iam list-roles | jq -r .Roles[].RoleName > dag-roles/aws.txt
+                sort dag-roles/roles.txt -o dag-roles/roles.txt
+                sort dag-roles/aws.txt -o dag-roles/aws.txt
+                comm -23 dag-roles/roles.txt dag-roles/aws.txt > dag-roles/missing-from-aws.txt
+                echo "#### annotated roles ###"
+                cat dag-roles/roles.txt
+                echo "### missing AWS IAM role(s) ###" > comment/comment.txt
+                echo \`\`\` >> comment/comment.txt
+                cat dag-roles/missing-from-aws.txt >> comment/comment.txt
+                echo \`\`\` >> comment/comment.txt
+                echo "⚠ ensure the roles ☝ are defined in the aws console ⚠" >> comment/comment.txt
+                cat comment/comment.txt
+                exit $(wc -l dag-roles/missing-from-aws.txt | awk '{print $1}')
+        on_failure:
+          put: resource-dags-pr
+          params:
+            path: resource-dags-pr
+            status: failure              
+            context: check-role-annotation
+            comment_file: comment/comment.txt
+      - put: resource-dags-pr
+        params:
+          path: resource-dags-pr
+          status: success
+          context: check-role-annotation
+  
+
+resource_types:
+  - name: pull-request
+    type: docker-image
+    source:
+      repository: teliaoss/github-pr-resource
+
+resources:
+- name: resource-dags-pr
+  type: pull-request
+  check_every: 10m
+  webhook_token: ((secrets.github-webhook-token))
+  source:
+    repository: ((repo))
+    access_token: ((secrets.github-access-token))

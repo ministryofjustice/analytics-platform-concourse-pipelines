@@ -86,3 +86,20 @@ A pipeline to keep our Helm repository up-to-date.
     <td>The AWS region where the S3 bucket is hosted. This is usually <code>eu-west-1</code>.</td></tr>
 </tbody>
 </table>
+
+
+### [`airflow.yaml`](airflow.yaml)
+```sh
+fly -t default set-pipeline -p airflow -c airflow.yaml -v repo=moj-analytical-services/airflow-dags
+```
+A pipeline to lint user contributed airflow DAGs in the environment specific
+repo.
+<table>
+<thead><tr><th>Value</th><th>Description</th></tr></thead>
+<tbody>
+    <tr>
+    <td><code>repo</code></td>
+    <td>the url to the DAGs repo in the format owner/reponame/ usually
+    <code>moj-analytical-services/airflow-dags</code>.</td></tr>
+</tbody>
+</table>
