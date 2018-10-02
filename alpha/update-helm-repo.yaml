@@ -29,7 +29,8 @@ jobs:
           aws s3 cp s3://${BUCKET}/index.yaml output/index.yaml
       outputs:
       - name: output
-      output_mapping: {output: existing-index}
+    output_mapping:
+      output: existing-index
 
   - task: package-charts
     config:
@@ -77,7 +78,11 @@ jobs:
         source:
           repository: anigeo/awscli
       params:
+        AWS_ACCESS_KEY_ID: ((aws.iam-put-object-helm-repo-bucket-access-key-id))
+        AWS_SECRET_ACCESS_KEY: ((aws.iam-put-object-helm-repo-bucket-secret-access-key))
         BUCKET: ((s3-bucket))
+        AWS_REGION: ((aws-region))
+
       run:
         path: sh
         args:
