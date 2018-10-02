@@ -70,9 +70,9 @@ A pipeline for deploying the Control Panel frontend to the alpha cluster.
 </tbody>
 </table>
 
-### [`update-helm-repo.yaml`](update-helm-repo.yaml)
+### [`update-helm-repo.yaml`](alpha/update-helm-repo.yaml)
 ```sh
-fly -t default set-pipeline -p update-helm-repo -c update-helm-repo.yaml -v s3-bucket=moj-analytics-helm-repo -v aws-region=eu-west-1
+fly -t default set-pipeline -p update-helm-repo -c alpha/update-helm-repo.yaml -v s3-bucket=moj-analytics-helm-repo -v aws-region=eu-west-1
 ```
 A pipeline to keep our Helm repository up-to-date.
 <table>
