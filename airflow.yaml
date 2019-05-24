@@ -102,6 +102,16 @@ jobs:
             path: resource-dags-pr
             status: pending
             context: check-role-annotation
+        - put: resource-dags-pr
+          params:
+            path: resource-dags-pr
+            status: pending
+            context: iam-policy-change
+        - put: resource-dags-pr
+          params:
+            path: resource-dags-pr
+            status: pending
+            context: pep8
 
       - task: check-role-annotation
         config:
@@ -149,7 +159,196 @@ jobs:
           path: resource-dags-pr
           status: success
           context: check-role-annotation
-  
+
+      - task: git-list-updated-dags
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: quay.io/s_block/alpine-git-jq
+              tag: latest
+          inputs:
+            - name: resource-dags-pr
+          outputs:
+            - name: airflow-dags
+          params:
+            GITHUB_TOKEN: ((secrets.github-access-token))
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                git clone https://moj-analytical-services:$GITHUB_TOKEN@github.com/moj-analytical-services/airflow-dags.git
+                cd $(pwd)/airflow-dags
+                git fetch --all
+                branch=$(jq -r '.[2] | .value' $(pwd)/../resource-dags-pr/.git/resource/metadata.json)
+                git checkout $branch
+                echo $(git diff --name-only master) | grep -v '/' | grep .py > $(pwd)/../dag-list.txt
+                cd $(pwd)/../
+                echo 'Updated DAG files'
+                echo __init__.py >> dag-list.txt
+                cat dag-list.txt
+                for dagfile in $(pwd)/airflow-dags/*.py; do
+                  if grep -q $(basename $dagfile) dag-list.txt; then
+                    echo \"Keeping: $(basename $dagfile)\"
+                  else
+                    echo \"REMOVING: $(basename $dagfile)\"
+                    rm -rf $dagfile
+                  fi
+                done
+
+      - task: list-images-used-by-updated-dags
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: quay.io/mojanalytics/airflow
+              tag: latest
+          inputs:
+            - name: airflow-dags
+          outputs:
+            - name: dag-images
+          params:
+            AIRFLOW__CORE__LOAD_EXAMPLES: false
+            AIRFLOW__CORE__DAGS_FOLDER: ./airflow-dags
+          run:
+            path: python
+            args:
+              - -c
+              - |
+                import itertools
+                from airflow.models import DagBag
+                import airflow.utils.dag_processing
+
+                d = DagBag()
+
+                all_tasks = itertools.chain.from_iterable(dag.tasks for dag in d.dags.values())
+
+                print([f'{task.image}\n' for task in all_tasks if getattr(task, 'image', None)])
+
+                with open('dag-images/images.txt', 'w') as f:
+                    f.writelines([f'{task.image}\n' for task in all_tasks if getattr(task, 'image', None) and 'amazonaws.com' in task.image])
+
+      - task: extract-policies-from-images
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: quay.io/s_block/dcind-jq
+              tag: latest
+          inputs:
+            - name: dag-images
+          outputs:
+            - name: policies
+          params:
+            AIRFLOW__CORE__LOAD_EXAMPLES: false
+            AIRFLOW__CORE__DAGS_FOLDER: ./resource-dags-pr
+          run:
+            path: sh
+            args:
+              - -ec
+              - |
+                policies=$(echo '[]' | jq .)
+                cat dag-images/images.txt | while read line
+                do
+                  id=$(docker create $line)
+                  docker cp $id:deploy.json - > deploy.json
+                  docker cp $id:iam_policy.json - > iam_policy.json
+                  docker rm -v $id
+                  role=$(cat deploy.json | jq -r '.role_name')
+                  policy=$(cat iam_policy.json | jq .)
+                  $policies=$(exho $policies | jq --arg policy $policy --arg role $role '. += [{role: $role:, policy: $policy}]')
+                done
+                echo $policies | jq -S . > policies/list.json
+                cat policies/list.json
+
+      - aggregate:
+        try:
+          task: extract-policies-from-images
+          config:
+            platform: linux
+
+            image_resource:
+              type: docker-image
+              source:
+                repository: governmentpaas/awscli
+
+            inputs:
+              - name: policies
+
+            params:
+              AWS_ACCESS_KEY_ID: ((secrets.role-putter-access-key-id))
+              AWS_SECRET_ACCESS_KEY: ((secrets.role-putter-secret-access-key))
+
+            run:
+              path: sh
+              args:
+                - -ec
+                - |
+                  cat policies/list.json | jq -r '.[]|[.role, .policy] | @tsv' |
+                    while IFS=$'\t' read -r role policy; do
+                      current=$(aws iam get-role-policy --role-name $role --policy-name $APP_NAME | jq -r '.PolicyDocument')
+                      echo $current | jq -S . > current.json
+                      echo $policy | jq -S . > new.json
+                      export ARE_SAME=$(jq --argfile a new.json --argfile b current.json -n '$a==$b')
+                      if [ \"$ARE_SAME\" != \"true\" ]; then
+                        echo -e '\033[0;31mChange in iam_policy.json'
+                        diff current.json new.json
+                        exit 166
+                      fi
+                      echo -e '\033[0;32mNo changes in iam_policy.json'
+                    done
+                  echo -e '\033[0;32mNo changes in iam_policy.json'
+          on_success:
+            put: resource-dags-pr
+            params:
+              path: resource-dags-pr
+              status: success
+              context: iam-policy-change
+          on_failure:
+            put: resource-dags-pr
+            params:
+              path: resource-dags-pr
+              status: failure
+              context: iam-policy-change
+
+      - aggregate:
+        try:
+          task: pep8
+          config:
+            platform: linux
+            image_resource:
+              type: docker-image
+              source:
+                repository: python
+                tag: alpine
+            inputs:
+              - name: resource-dags-pr
+            run:
+              path: sh
+              args:
+                - -ec
+                - |
+                  pip install flake8
+                  flake8 ./resource-dags-pr/
+          on_failure:
+            put: resource-dags-pr
+            attempts: 3
+            params:
+              path: resource-dags-pr
+              status: failure
+              context: pep8
+          on_success:
+            put: resource-dags-pr
+            attempts: 3
+            params:
+              path: resource-dags-pr
+              status: success
+              context: pep8
 
 resource_types:
   - name: pull-request
