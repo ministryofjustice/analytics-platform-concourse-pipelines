@@ -268,7 +268,7 @@ jobs:
 
       - aggregate:
         try:
-          task: extract-policies-from-images
+          task: check-iam-changes
           config:
             platform: linux
 
