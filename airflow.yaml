@@ -226,7 +226,7 @@ jobs:
 
                 all_tasks = itertools.chain.from_iterable(dag.tasks for dag in d.dags.values())
 
-                print([f'{task.image}\n' for task in all_tasks if getattr(task, 'image', None)])
+                print([f'{task.image}\n' for task in all_tasks if getattr(task, 'image', None) and 'amazonaws.com' in task.image])
 
                 with open('dag-images/images.txt', 'w') as f:
                     f.writelines([f'{task.image}\n' for task in all_tasks if getattr(task, 'image', None) and 'amazonaws.com' in task.image])
