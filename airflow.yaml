@@ -261,7 +261,7 @@ jobs:
                   docker rm -v $id
                   role=$(cat deploy.json | jq -r '.role_name')
                   policy=$(cat iam_policy.json | jq .)
-                  $policies=$(exho $policies | jq --arg policy $policy --arg role $role '. += [{role: $role:, policy: $policy}]')
+                  $policies=$(echo $policies | jq --arg policy $policy --arg role $role '. += [{role: $role:, policy: $policy}]')
                 done
                 echo $policies | jq -S . > policies/list.json
                 cat policies/list.json
