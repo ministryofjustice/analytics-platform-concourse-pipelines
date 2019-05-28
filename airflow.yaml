@@ -13,12 +13,14 @@ jobs:
             path: resource-dags-pr
             status: pending
             context: lint
+          attempts: 3
 
         - put: resource-dags-pr
           params:
             path: resource-dags-pr
             status: pending
             context: list-roles
+           attempts: 3
       # run the lint and list roles tasks concurrently
       - aggregate:
         - task: run-lint
@@ -82,6 +84,7 @@ jobs:
             path: resource-dags-pr
             status: failure
             context: list-roles
+          attempts: 3
       
       
       # mark first two tasks' github 'checks' as success and mark the 
@@ -92,26 +95,31 @@ jobs:
             path: resource-dags-pr
             status: success
             context: list-roles
+          attempts: 3
         - put: resource-dags-pr
           params:
             path: resource-dags-pr
             status: success
             context: lint
+          attempts: 3
         - put: resource-dags-pr
           params:
             path: resource-dags-pr
             status: pending
             context: check-role-annotation
+          attempts: 3
         - put: resource-dags-pr
           params:
             path: resource-dags-pr
             status: pending
             context: iam-policy-change
+          attempts: 3
         - put: resource-dags-pr
           params:
             path: resource-dags-pr
             status: pending
             context: pep8
+          attempts: 3
 
       - task: check-role-annotation
         config:
@@ -154,11 +162,13 @@ jobs:
             status: failure              
             context: check-role-annotation
             comment_file: comment/comment.txt
+          attempts: 3
       - put: resource-dags-pr
         params:
           path: resource-dags-pr
           status: success
           context: check-role-annotation
+        attempts: 3
 
       - task: git-list-updated-dags
         config:
@@ -309,12 +319,14 @@ jobs:
               path: resource-dags-pr
               status: success
               context: iam-policy-change
+            attempts: 3
           on_failure:
             put: resource-dags-pr
             params:
               path: resource-dags-pr
               status: failure
               context: iam-policy-change
+            attempts: 3
 
       - aggregate:
         try:
