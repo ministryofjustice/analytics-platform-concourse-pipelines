@@ -194,7 +194,8 @@ jobs:
                 git fetch --all
                 branch=$(jq -r '.[2] | .value' $(pwd)/../resource-dags-pr/.git/resource/metadata.json)
                 git checkout $branch
-                echo $(git diff --name-only master) | grep -v '/' | grep .py > $(pwd)/../dag-list.txt
+                git diff --name-only master | grep -v '/' | grep .py
+                git diff --name-only master | grep -v '/' | grep .py > $(pwd)/../dag-list.txt
                 cd $(pwd)/../
                 echo 'Updated DAG files'
                 echo __init__.py >> dag-list.txt
