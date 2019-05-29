@@ -277,7 +277,6 @@ jobs:
               while IFS=$'\t' read -r app_name role policy; do
                 echo $app_name
                 echo $role
-                echo $policy
                 current=$(aws iam get-role-policy --role-name $role --policy-name $app_name | jq -r '.PolicyDocument')
                 echo $current | jq -S . > current.json
                 echo $policy | jq -S . > new.json
