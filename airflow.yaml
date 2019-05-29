@@ -304,9 +304,12 @@ jobs:
               args:
                 - -ec
                 - |
-                  cat policies/list.json | jq -r '.[]|[.role, .policy] | @tsv' |
-                    while IFS=$'\t' read -r role policy; do
-                      current=$(aws iam get-role-policy --role-name $role --policy-name $APP_NAME | jq -r '.PolicyDocument')
+                  cat policies/list.json | jq -r '.[] | [.app_name, .role, (.policy|tostring)] | @tsv' |
+                    while IFS=$'\t' read -r app_name role policy; do
+                      echo $app_name
+                      echo $role
+                      echo $policy
+                      current=$(aws iam get-role-policy --role-name $role --policy-name $app_name | jq -r '.PolicyDocument')
                       echo $current | jq -S . > current.json
                       echo $policy | jq -S . > new.json
                       export ARE_SAME=$(jq --argfile a new.json --argfile b current.json -n '$a==$b')
