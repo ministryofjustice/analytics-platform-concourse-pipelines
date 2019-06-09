@@ -214,7 +214,7 @@ jobs:
           def si(image):
               return image.split('/')[1].split(':')[0]
 
-          with open('dag-images/images.txt', 'w') as f:
+          with open('dag-images/repos.txt', 'w') as f:
               f.writelines(set([f'{si(task.image)}\n' for task in all_tasks if getattr(task, 'image', None) and 'amazonaws.com' in task.image]))
       inputs:
       - name: airflow-dags
@@ -236,8 +236,8 @@ jobs:
         - -exc
         - |
           echo '[]' | jq -S . > policies/list.json
-          cat dag-images/images.txt
-          cat dag-images/images.txt | while read line
+          cat dag-images/repos.txt
+          cat dag-images/repos.txt | while read line
           do
             {
               git clone https://moj-analytical-services:$GITHUB_TOKEN@github.com/moj-analytical-services/$line.git
