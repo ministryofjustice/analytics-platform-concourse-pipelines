@@ -214,83 +214,17 @@ jobs:
           def si(image):
               return image.split('/')[1].split(':')[0]
 
-          with open('dag-images/images.txt', 'w') as f:
+          with open('repos/list.txt', 'w') as f:
               f.writelines(set([f'{si(task.image)}\n' for task in all_tasks if getattr(task, 'image', None) and 'amazonaws.com' in task.image]))
       inputs:
       - name: airflow-dags
       outputs:
-      - name: dag-images
-  - task: extract-policies-from-images
-    config:
-      platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: quay.io/s_block/alpine-git-jq
-          tag: latest
-      params:
-        GITHUB_TOKEN: ((secrets.github-access-token))
-      run:
-        path: bash
-        args:
-        - -exc
-        - |
-          echo '[]' | jq -S . > policies/list.json
-          cat dag-images/images.txt
-          cat dag-images/images.txt | while read line
-          do
-            {
-              git clone https://moj-analytical-services:$GITHUB_TOKEN@github.com/moj-analytical-services/$line.git
-              if [ -f $line/deploy.json ] && [ -f $line/iam_policy.json ]; then
-                role=$(cat $line/deploy.json | jq -r '.role_name')
-                policy=$(cat $line/iam_policy.json | jq -r .)
-                rm -rf $line
-                policies=$(cat policies/list.json | jq --argjson policy "$policy" --arg role "$role"  --arg app_name "$line" '. += [{role: $role, policy: $policy, app_name: $app_name}]')
-                echo $policies | jq -S . > policies/list.json
-              fi
-            } || {
-              echo 'No repo'
-            }
-          done
-          cat policies/list.json | jq -S .
-      inputs:
-      - name: dag-images
-      outputs:
-      - name: policies
+      - name: repos
+  - task: extract-policies-from-repos
+    file: common-tasks/extract-policies-from-repos.yaml
   - try:
       task: check-iam-changes
-      config:
-        platform: linux
-        image_resource:
-          type: docker-image
-          source:
-            repository: governmentpaas/awscli
-        params:
-          AWS_ACCESS_KEY_ID: ((secrets.role-putter-access-key-id))
-          AWS_SECRET_ACCESS_KEY: ((secrets.role-putter-secret-access-key))
-        run:
-          path: sh
-          args:
-          - -ec
-          - |
-            cat policies/list.json | jq -r '.[] | [.app_name, .role, (.policy|tostring)] | @tsv' |
-              while IFS=$'\t' read -r app_name role policy; do
-                echo $app_name
-                echo $role
-                current=$(aws iam get-role-policy --role-name $role --policy-name $app_name | jq -r '.PolicyDocument')
-                echo $current | jq -S . > current.json
-                echo $policy | jq -S . > new.json
-                export ARE_SAME=$(jq --argfile a new.json --argfile b current.json -n '$a==$b')
-                if [ \"$ARE_SAME\" != \"true\" ]; then
-                  echo -e '\033[0;31mChange in iam_policy.json'
-                  diff current.json new.json
-                  exit 166
-                fi
-                echo -e '\033[0;32mNo changes in iam_policy.json'
-              done
-            echo -e '\033[0;32mNo changes in iam_policy.json'
-        inputs:
-        - name: policies
+      file: common-tasks/diff-iam-policy.yaml
       on_failure:
         put: resource-dags-pr
         params:
@@ -305,22 +239,9 @@ jobs:
           status: success
   - try:
       task: pep8
-      config:
-        platform: linux
-        image_resource:
-          type: docker-image
-          source:
-            repository: python
-            tag: alpine
-        run:
-          path: sh
-          args:
-          - -ec
-          - |
-            pip install flake8
-            flake8 ./resource-dags-pr/
-        inputs:
-        - name: resource-dags-pr
+      file: common-tasks/python-flake8.yaml
+      input_mapping:
+        source: resource-dags-pr
       on_failure:
         put: resource-dags-pr
         params:
@@ -350,3 +271,7 @@ resources:
   source:
     repository: ((repo))
     access_token: ((secrets.github-access-token))
+- name: common-tasks
+  type: git
+  source:
+    uri: https://github.com/ministryofjustice/analytics-platform-common-concourse-tasks.git
