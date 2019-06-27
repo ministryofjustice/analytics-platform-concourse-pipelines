@@ -28,8 +28,8 @@ jobs:
       values:
       - cpanel-helm-config/chart-env-config/alpha/cpanel.yml
       override_values:
-      - { key: API.Image.Tag, path: release/commit_sha }
-      - { key: API.Branch, value: master }
+      - { key: image.tag, path: release/commit_sha }
+      - { key: branch, value: master }
       - { key: tags.branch, value: false }
 
 resources:
@@ -76,4 +76,4 @@ resource_types:
   type: docker-image
   source:
     repository: linkyard/concourse-helm-resource
-    tag: 2.9.1
+    tag: 2.13.1
