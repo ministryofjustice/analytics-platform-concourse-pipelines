@@ -48,9 +48,8 @@ jobs:
           docker load -i postgres/image
           docker tag "$(cat postgres/image-id)" "db"
           # run tests
-          docker-compose -f source/docker-compose.test.yml up --abort-on-container-exit
+          docker-compose run -e DJANGO_SETTINGS_MODULE=controlpanel.settings.test -e KUBECONFIG=tests/kubeconfig app sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
           # clean up
-          docker-compose -f source/docker-compose.test.yml down
           docker volume rm $(docker volume ls -q)
 
 - name: deploy
@@ -65,8 +64,8 @@ jobs:
       values:
       - helm-values/chart-env-config/dev/cpanel.yml
       override_values:
-      - { key: API.Image.Tag, path: docker-image/tag }
-      - { key: API.Branch, value: master }
+      - { key: image.tag, path: docker-image/tag }
+      - { key: branch, value: master }
       - { key: tags.branch, value: false }
 
 resources:
@@ -87,7 +86,7 @@ resources:
   type: docker-image
   source:
     repository: postgres
-    tag: 9.6.2
+    tag: 9.6
 
 - name: helm-values
   type: git
@@ -113,4 +112,4 @@ resource_types:
   type: docker-image
   source:
     repository: linkyard/concourse-helm-resource
-    tag: 2.9.1
+    tag: 2.13.1
