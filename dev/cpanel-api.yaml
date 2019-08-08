@@ -1,61 +1,8 @@
 ---
 jobs:
-- name: build
-  plan:
-  - get: source
-    params: {depth: 1}
-    trigger: true
-  - put: docker-image
-    params:
-      build: source
-      tag: source/.git/ref
-
-- name: test
-  plan:
-  - get: source
-    params: {depth: 1}
-    passed: [build]
-    trigger: true
-  - get: docker-image
-    passed: [build]
-    params:
-      save: true
-  - get: postgres
-    params:
-      save: true
-  - task: run-tests
-    privileged: true
-    config:
-      platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: amidos/dcind
-      inputs:
-      - name: source
-      - name: docker-image
-      - name: postgres
-      run:
-        path: sh
-        args:
-        - -ec
-        - |
-          source /docker-lib.sh
-          start_docker
-          # preload images
-          docker load -i docker-image/image
-          docker tag "$(cat docker-image/image-id)" "app"
-          docker load -i postgres/image
-          docker tag "$(cat postgres/image-id)" "db"
-          # run tests
-          docker-compose run -e DJANGO_SETTINGS_MODULE=controlpanel.settings.test -e KUBECONFIG=tests/kubeconfig app sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
-          # clean up
-          docker volume rm $(docker volume ls -q)
-
 - name: deploy
   plan:
   - get: docker-image
-    passed: [build, test]
     trigger: true
   - get: helm-values
   - put: helm-release
@@ -69,24 +16,13 @@ jobs:
       - { key: tags.branch, value: false }
 
 resources:
-- name: source
-  type: git
-  source:
-    uri: https://github.com/ministryofjustice/analytics-platform-control-panel.git
-    branch: master
-
 - name: docker-image
   type: docker-image
   source:
+    tag: master
     repository: quay.io/mojanalytics/control-panel
     username: ((quay.username))
     password: ((quay.password))
-
-- name: postgres
-  type: docker-image
-  source:
-    repository: postgres
-    tag: 9.6
 
 - name: helm-values
   type: git
