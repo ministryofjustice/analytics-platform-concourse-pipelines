@@ -4,14 +4,16 @@ jobs:
   plan:
   - get: docker-image
     trigger: true
-  - get: helm-values
+  - aggregate:
+    - get: source
+    - get: helm-values
   - put: helm-release
     params:
       chart: mojanalytics/cpanel
       values:
       - helm-values/chart-env-config/dev/cpanel.yml
       override_values:
-      - { key: image.tag, path: docker-image/tag }
+      - { key: image.tag, path: source/.git/ref }
       - { key: branch, value: master }
       - { key: tags.branch, value: false }
 
@@ -42,6 +44,12 @@ resources:
     repos:
     - name: mojanalytics
       url: http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
+
+- name: source
+  type: git
+  source:
+    uri: https://github.com/ministryofjustice/analytics-platform-control-panel.git
+    branch: master
 
 resource_types:
 - name: helm
