@@ -24,15 +24,19 @@ Most of these pipelines are in the `admin` team, so an example
 login command would look like:
 
 ```sh
-fly -t default login -c https://concourse-url -n admin
+fly login -c https://concourse.services.alpha.mojanalytics.xyz -t alpha-admin -n admin
 ```
 
-However, `airflow` pipeline is in `main` team so you'll have to login passing `-n main`
+However, `airflow` pipeline is in `main` team so you'll have to login passing `-n main`:
+
+```sh
+fly login -c https://concourse.services.alpha.mojanalytics.xyz -t alpha-main -n main
+```
 
 **NOTE**: You can find the Concourse URL by getting its Kubernetes `Ingress` resource:
 
 ```sh
-$ kubectl -n default get ingress -lapp=concourse-web
+kubectl -n default get ingress -lapp=concourse-web
 ```
 
 ## Values
@@ -49,20 +53,20 @@ The following pipeline configs are provided in this repo:
 
 ### [`dev/cpanel-api.yaml`](dev/cpanel-api.yaml)
 ```sh
-fly -t default set-pipeline -p cpanel-api -c dev/cpanel-api.yaml
+fly -t alpha-admin set-pipeline -p cpanel-api -c dev/cpanel-api.yaml
 ```
 A pipeline for deploying the Control Panel API to the dev cluster.
 
 
 ### [`alpha/cpanel-api.yaml`](alpha/cpanel-api.yaml)
 ```sh
-fly -t default set-pipeline -p cpanel-api -c alpha/cpanel-api.yaml
+fly -t alpha-admin set-pipeline -p cpanel-api -c alpha/cpanel-api.yaml
 ```
 A pipeline for deploying the Control Panel API to the alpha cluster.
 
 ### [`update-helm-repo.yaml`](alpha/update-helm-repo.yaml)
 ```sh
-fly -t default set-pipeline -p update-helm-repo -c alpha/update-helm-repo.yaml -v s3-bucket=moj-analytics-helm-repo -v aws-region=eu-west-1
+fly -t alpha-admin set-pipeline -p update-helm-repo -c alpha/update-helm-repo.yaml -v s3-bucket=moj-analytics-helm-repo -v aws-region=eu-west-1
 ```
 A pipeline to keep our Helm repository up-to-date.
 <table>
@@ -80,7 +84,7 @@ A pipeline to keep our Helm repository up-to-date.
 
 ### [`airflow.yaml`](airflow.yaml)
 ```sh
-fly -t default set-pipeline -p airflow -c airflow.yaml -v repo=moj-analytical-services/airflow-dags
+fly -t alpha-main set-pipeline -p airflow -c airflow.yaml -v repo=moj-analytical-services/airflow-dags
 ```
 A pipeline to lint user contributed airflow DAGs in the environment specific
 repo.
