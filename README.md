@@ -7,15 +7,32 @@ deploy components of the MOJ Analytical Platform.
 
 Setting a pipeline in Concourse is done using the [`fly` CLI tool](https://concourse-ci.org/fly.html)
 
+### Teams
+
+We currently have two Concourse team:
+- `admin` with the pipelines to release Control Panel, update Helm repository, and update webapp pipelines from GH repositories
+- `main` with the pipelines to release users' webapps and the `airflow` pipeline
+
+### fly login
+
 Example invocations of `fly` are listed alongside the documentation of each
 pipeline below. You will need to `fly login` to a Concourse server before you
 can set a pipeline, and on first login, you will name the "target", which is
 referred to as `default` in the examples. Eg:
 
-These pipelines are all intended to be owned by the `admin` team, so an example
+Most of these pipelines are in the `admin` team, so an example
 login command would look like:
+
 ```sh
 fly -t default login -c https://concourse-url -n admin
+```
+
+However, `airflow` pipeline is in `main` team so you'll have to login passing `-n main`
+
+**NOTE**: You can find the Concourse URL by getting its Kubernetes `Ingress` resource:
+
+```sh
+$ kubectl -n default get ingress -lapp=concourse-web
 ```
 
 ## Values
@@ -36,39 +53,12 @@ fly -t default set-pipeline -p cpanel-api -c dev/cpanel-api.yaml
 ```
 A pipeline for deploying the Control Panel API to the dev cluster.
 
-### [`dev/cpanel-frontend.yaml`](dev/cpanel-frontend.yaml)
-```sh
-fly -t default set-pipeline -p cpanel-frontend -c dev/cpanel-frontend.yaml -v cpanel-api-url=http://cpanel-master-cpanel
-```
-A pipeline for deploying the Control Panel frontend to the dev cluster.
-<table>
-<thead><tr><th>Value</th><th>Description</th></tr></thead>
-<tbody>
-    <tr>
-    <td><code>cpanel-api-url</code></td>
-    <td>The URL for the Control Panel API that the frontend will connect to. This should be <code>http://cpanel-master-cpanel/</code>, unless you are doing something unusual</td></tr>
-</tbody>
-</table>
 
 ### [`alpha/cpanel-api.yaml`](alpha/cpanel-api.yaml)
 ```sh
 fly -t default set-pipeline -p cpanel-api -c alpha/cpanel-api.yaml
 ```
 A pipeline for deploying the Control Panel API to the alpha cluster.
-
-### [`alpha/cpanel-frontend.yaml`](alpha/cpanel-frontend.yaml)
-```sh
-fly -t default set-pipeline -p cpanel-frontend -c alpha/cpanel-frontend.yaml -v cpanel-api-url=http://cpanel-master-cpanel
-```
-A pipeline for deploying the Control Panel frontend to the alpha cluster.
-<table>
-<thead><tr><th>Value</th><th>Description</th></tr></thead>
-<tbody>
-    <tr>
-    <td><code>cpanel-api-url</code></td>
-    <td>The URL for the Control Panel API that the frontend will connect to. This should be <code>http://cpanel-master-cpanel/</code>, unless you are doing something unusual</td></tr>
-</tbody>
-</table>
 
 ### [`update-helm-repo.yaml`](alpha/update-helm-repo.yaml)
 ```sh
@@ -103,3 +93,5 @@ repo.
     <code>moj-analytical-services/airflow-dags</code>.</td></tr>
 </tbody>
 </table>
+
+**NOTE**: This pipeline is in the `main` team so you'll have to login in that team to update it, see ["fly login" section](#fly-login).
