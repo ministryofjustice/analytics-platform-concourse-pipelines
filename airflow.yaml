@@ -24,7 +24,7 @@ jobs:
           type: docker-image
           source:
             repository: quay.io/mojanalytics/airflow
-            tag: latest
+            tag: 1.10.3
         params:
           AIRFLOW__CORE__DAGS_FOLDER: ./resource-dags-pr
           AIRFLOW__CORE__LOAD_EXAMPLES: "false"
@@ -46,7 +46,7 @@ jobs:
           type: docker-image
           source:
             repository: quay.io/mojanalytics/airflow
-            tag: latest
+            tag: 1.10.3
         params:
           AIRFLOW__CORE__DAGS_FOLDER: ./resource-dags-pr
           AIRFLOW__CORE__LOAD_EXAMPLES: "false"
@@ -194,7 +194,7 @@ jobs:
         type: docker-image
         source:
           repository: quay.io/mojanalytics/airflow
-          tag: latest
+          tag: 1.10.3
       params:
         AIRFLOW__CORE__DAGS_FOLDER: ./airflow-dags
         AIRFLOW__CORE__LOAD_EXAMPLES: "false"
