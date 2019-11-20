@@ -5,6 +5,7 @@ jobs:
   - get: resource-dags-pr
     trigger: true
     version: every
+  - get: common-tasks
   - aggregate:
     - put: resource-dags-pr
       params:
