@@ -156,7 +156,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: quay.io/s_block/alpine-git-jq
+          repository: quay.io/mojanalytics/alpine-python-git-jq
           tag: latest
       params:
         GITHUB_TOKEN: ((secrets.github-access-token))
