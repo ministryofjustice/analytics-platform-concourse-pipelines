@@ -83,6 +83,8 @@ A pipeline to keep our Helm repository up-to-date.
 
 
 ### [`airflow.yaml`](airflow.yaml)
+NB The Data Engineering team are responsible for this pipeline
+
 ```sh
 fly -t alpha-main set-pipeline -p airflow -c airflow.yaml -v repo=moj-analytical-services/airflow-dags
 ```
