@@ -168,7 +168,7 @@ jobs:
           git clone https://moj-analytical-services:$GITHUB_TOKEN@github.com/moj-analytical-services/airflow-dags.git
           cd $(pwd)/airflow-dags
           git fetch --all
-          branch=$(jq -r '.[2] | .value' $(pwd)/../resource-dags-pr/.git/resource/metadata.json)
+          branch=$(cat $(pwd)/../resource-dags-pr/.git/resource/head_name)
           git checkout $branch
           git diff --name-only master | grep -v '/' | grep .py
           git diff --name-only master | grep -v '/' | grep .py > $(pwd)/../dag-list.txt
