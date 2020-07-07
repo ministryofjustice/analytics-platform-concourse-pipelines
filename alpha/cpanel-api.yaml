@@ -1,79 +1,78 @@
 ---
 jobs:
-- name: deploy
-  plan:
+  - name: deploy
+    plan:
+      - get: release
+        trigger: true
+        params:
+          include_source_tarball: true
 
-  - get: release
-    trigger: true
-    params:
-      include_source_tarball: true
+      - get: common-tasks
 
-  - get: common-tasks
+      - task: cpanel-source
+        file: common-tasks/extract-release-tarball.yaml
+        output_mapping: { extracted: cpanel-source }
 
-  - task: cpanel-source
-    file: common-tasks/extract-release-tarball.yaml
-    output_mapping: {extracted: cpanel-source}
+      - put: cpanel-docker-image
+        params:
+          build: cpanel-source
+          tag: release/commit_sha
+          additional_tags: release/tag
 
-  - put: cpanel-docker-image
-    params:
-      build: cpanel-source
-      tag: release/commit_sha
-      additional_tags: release/tag
+      - get: cpanel-helm-config
 
-  - get: cpanel-helm-config
-
-  - put: cpanel-helm-release
-    params:
-      chart: mojanalytics/cpanel
-      values:
-      - cpanel-helm-config/chart-env-config/alpha/cpanel.yml
-      override_values:
-      - { key: image.tag, path: release/commit_sha }
-      - { key: branch, value: main }
-      - { key: tags.branch, value: false }
+      - put: cpanel-helm-release
+        params:
+          chart: mojanalytics/cpanel
+          values:
+            - cpanel-helm-config/chart-env-config/alpha/cpanel.yml
+          override_values:
+            - { key: image.tag, path: release/commit_sha }
+            - { key: branch, value: main }
+            - { key: tags.branch, value: false }
 
 resources:
-- name: common-tasks
-  type: git
-  source:
-    uri: https://github.com/ministryofjustice/analytics-platform-common-concourse-tasks.git
+  - name: common-tasks
+    type: git
+    source:
+      uri: https://github.com/ministryofjustice/analytics-platform-common-concourse-tasks.git
 
-- name: release
-  type: github-release
-  source:
-    owner: ministryofjustice
-    repository: analytics-platform-control-panel
-    access_token: ((github.access-token))
+  - name: release
+    type: github-release
+    source:
+      owner: ministryofjustice
+      repository: analytics-platform-control-panel
+      access_token: ((github.access-token))
 
-- name: cpanel-docker-image
-  type: docker-image
-  source:
-    repository: quay.io/mojanalytics/control-panel
-    username: ((quay.username))
-    password: ((quay.password))
+  - name: cpanel-docker-image
+    type: docker-image
+    source:
+      repository: quay.io/mojanalytics/control-panel
+      username: ((quay.username))
+      password: ((quay.password))
 
-- name: cpanel-helm-config
-  type: git
-  source:
-    git_crypt_key: ((gitcrypt-keys.config))
-    uri: https://github.com/ministryofjustice/analytics-platform-config.git
+  - name: cpanel-helm-config
+    type: git
+    source:
+      git_crypt_key: ((gitcrypt-keys.config))
+      uri: https://github.com/ministryofjustice/analytics-platform-config.git
 
-- name: cpanel-helm-release
-  type: helm
-  source:
-    cluster_url: ((kubernetes.api-url))
-    cluster_ca: ((kubernetes.ca-cert))
-    helm_host: tiller-deploy.kube-system:44134
-    token: ((kubernetes.token))
-    namespace: default
-    release: cpanel-main
-    repos:
-    - name: mojanalytics
-      url: http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
+  - name: cpanel-helm-release
+    type: helm
+    source:
+      cluster_url: ((kubernetes.api-url))
+      cluster_ca: ((kubernetes.ca-cert))
+      helm_host: tiller-deploy.kube-system:44134
+      token: ((kubernetes.token))
+      namespace: default
+      release: cpanel-main
+      repos:
+        - name: mojanalytics
+          url: http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
 
 resource_types:
-- name: helm
-  type: docker-image
-  source:
-    repository: linkyard/concourse-helm-resource
-    tag: 2.13.1
+  - name: helm
+    type: docker-image
+    source:
+      repository: linkyard/concourse-helm-resource
+      tag: 2.13.1
