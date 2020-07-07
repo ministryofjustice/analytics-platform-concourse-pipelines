@@ -14,14 +14,14 @@ jobs:
       - helm-values/chart-env-config/dev/cpanel.yml
       override_values:
       - { key: image.tag, path: source/.git/ref }
-      - { key: branch, value: master }
+      - { key: branch, value: main }
       - { key: tags.branch, value: false }
 
 resources:
 - name: docker-image
   type: docker-image
   source:
-    tag: master
+    tag: main
     repository: quay.io/mojanalytics/control-panel
     username: ((quay.username))
     password: ((quay.password))
@@ -40,7 +40,7 @@ resources:
     helm_host: tiller-deploy.kube-system:44134
     token: ((kubernetes.token))
     namespace: default
-    release: cpanel-master
+    release: cpanel-main
     repos:
     - name: mojanalytics
       url: http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
@@ -49,7 +49,7 @@ resources:
   type: git
   source:
     uri: https://github.com/ministryofjustice/analytics-platform-control-panel.git
-    branch: master
+    branch: main
 
 resource_types:
 - name: helm

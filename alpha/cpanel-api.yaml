@@ -29,7 +29,7 @@ jobs:
       - cpanel-helm-config/chart-env-config/alpha/cpanel.yml
       override_values:
       - { key: image.tag, path: release/commit_sha }
-      - { key: branch, value: master }
+      - { key: branch, value: main }
       - { key: tags.branch, value: false }
 
 resources:
@@ -66,7 +66,7 @@ resources:
     helm_host: tiller-deploy.kube-system:44134
     token: ((kubernetes.token))
     namespace: default
-    release: cpanel-master
+    release: cpanel-main
     repos:
     - name: mojanalytics
       url: http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
