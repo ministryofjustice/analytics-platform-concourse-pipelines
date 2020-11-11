@@ -17,7 +17,7 @@ jobs:
           image_resource:
             type: docker-image
             source:
-              repository: anigeo/awscli
+              repository: 593291632749.dkr.ecr.eu-west-1.amazonaws.com/anigeo-awscli
           params:
             BUCKET: ((s3-bucket))
           run:
@@ -37,7 +37,7 @@ jobs:
           image_resource:
             type: docker-image
             source:
-              repository: lachlanevenson/k8s-helm
+              repository: 593291632749.dkr.ecr.eu-west-1.amazonaws.com/lachlanevenson-k8s-helm
               tag: v2.9.1
           params:
             BUCKET: ((s3-bucket))
@@ -75,7 +75,7 @@ jobs:
           image_resource:
             type: docker-image
             source:
-              repository: anigeo/awscli
+              repository: 593291632749.dkr.ecr.eu-west-1.amazonaws.com/anigeo-awscli
           params:
             AWS_ACCESS_KEY_ID: ((aws.iam-put-object-helm-repo-bucket-access-key-id))
             AWS_SECRET_ACCESS_KEY: ((aws.iam-put-object-helm-repo-bucket-secret-access-key))
