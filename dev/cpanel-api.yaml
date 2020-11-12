@@ -55,5 +55,5 @@ resource_types:
   - name: helm
     type: docker-image
     source:
-      repository: linkyard/concourse-helm-resource
+      repository: 593291632749.dkr.ecr.eu-west-1.amazonaws.com/concourse-helm-resource
       tag: 2.13.1
