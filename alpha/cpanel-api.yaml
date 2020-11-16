@@ -65,7 +65,7 @@ resources:
       helm_host: tiller-deploy.kube-system:44134
       token: ((kubernetes.token))
       namespace: default
-      release: cpanel-main
+      release: cpanel-master
       repos:
         - name: mojanalytics
           url: http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
