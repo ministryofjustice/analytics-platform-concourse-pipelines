@@ -3,7 +3,8 @@ resources:
   - name: helm-charts
     type: git
     source:
-      uri: https://github.com/ministryofjustice/analytics-platform-helm-charts.git
+      uri: git@github.com:ministryofjustice/analytics-platform-helm-charts.git
+      private_key: ((github.ssh-key))
 
 jobs:
   - name: helm-repo
